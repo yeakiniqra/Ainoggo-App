@@ -49,6 +49,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.camera.core.AspectRatio
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -61,8 +62,16 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -348,31 +357,32 @@ fun DocumentTab() {
     val scrollState = rememberScrollState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Main content
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Reset image and response if resetState is true
-            if (resetState) {
-                viewModel.documentUri = null
-                viewModel.analysisResult = null
-                resetState = false
-            }
+        if (showCamera && hasPermissions.value) {
+            // Full screen camera
+            CameraView(
+                cameraExecutor = cameraExecutor,
+                onPhotoTaken = { uri ->
+                    showCamera = false
+                    viewModel.analyzeDocument(uri, context)
+                },
+                onDismiss = { showCamera = false }
+            )
+        } else {
+            // Main content
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(scrollState),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Reset image and response if resetState is true
+                if (resetState) {
+                    viewModel.documentUri = null
+                    viewModel.analysisResult = null
+                    resetState = false
+                }
 
-            if (showCamera && hasPermissions.value) {
-                CameraView(
-                    cameraExecutor = cameraExecutor,
-                    onPhotoTaken = { uri ->
-                        showCamera = false
-                        viewModel.analyzeDocument(uri, context)
-                    },
-                    onDismiss = { showCamera = false }
-                )
-            } else {
                 // Upload section
                 Card(
                     modifier = Modifier
@@ -396,7 +406,7 @@ fun DocumentTab() {
                             "ডকুমেন্ট আপলোড করুন",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = GreenPrimary
+                            color = MaterialTheme.colorScheme.primary
                         )
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -409,9 +419,9 @@ fun DocumentTab() {
                                 .fillMaxWidth()
                                 .height(48.dp),
                             shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, GreenSecondary),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = GreenSecondary
+                                contentColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
                             Row(
@@ -421,7 +431,7 @@ fun DocumentTab() {
                                 Icon(
                                     imageVector = Icons.Default.Upload,
                                     contentDescription = "Upload",
-                                    tint = GreenSecondary
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
@@ -473,7 +483,7 @@ fun DocumentTab() {
                             Button(
                                 onClick = { resetState = true },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.White.copy(alpha = 0.8f)
+                                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
                                 ),
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
@@ -483,7 +493,7 @@ fun DocumentTab() {
                                 Icon(
                                     imageVector = Icons.Default.Refresh,
                                     contentDescription = "Try Again",
-                                    tint = Color.Black
+                                    tint = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
@@ -501,7 +511,7 @@ fun DocumentTab() {
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator(
-                            color = GreenPrimary,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(48.dp),
                             strokeWidth = 4.dp
                         )
@@ -516,7 +526,7 @@ fun DocumentTab() {
                             .padding(vertical = 8.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color.Red.copy(alpha = 0.1f)
+                            containerColor = MaterialTheme.colorScheme.errorContainer
                         )
                     ) {
                         Row(
@@ -528,12 +538,12 @@ fun DocumentTab() {
                             Icon(
                                 imageVector = Icons.Default.Warning,
                                 contentDescription = "Error",
-                                tint = Color.Red
+                                tint = MaterialTheme.colorScheme.error
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = it,
-                                color = Color.Red,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -563,19 +573,20 @@ fun DocumentTab() {
                                 "বিশ্লেষণ ফলাফল",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = GreenPrimary
+                                color = MaterialTheme.colorScheme.primary
                             )
 
-                            Divider(
+                            HorizontalDivider(
                                 modifier = Modifier.padding(vertical = 16.dp),
-                                color = GreenSecondary.copy(alpha = 0.3f),
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
                                 thickness = 1.dp
                             )
 
                             Text(
                                 "ডকুমেন্ট ধরন: ${result.analysis.content_analysis.document_type}",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
 
                             Spacer(modifier = Modifier.height(16.dp))
@@ -583,7 +594,8 @@ fun DocumentTab() {
                             Text(
                                 "মূল উপাদান:",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
 
                             Spacer(modifier = Modifier.height(8.dp))
@@ -601,11 +613,14 @@ fun DocumentTab() {
                                         Box(
                                             modifier = Modifier
                                                 .size(8.dp)
-                                                .background(GreenPrimary, CircleShape)
+                                                .background(MaterialTheme.colorScheme.primary, CircleShape)
                                                 .align(Alignment.CenterVertically)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text(element)
+                                        Text(
+                                            element,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
                                     }
                                 }
                             }
@@ -615,7 +630,8 @@ fun DocumentTab() {
                             Text(
                                 "চিহ্নিত সমস্যা:",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
 
                             Spacer(modifier = Modifier.height(8.dp))
@@ -633,11 +649,14 @@ fun DocumentTab() {
                                         Box(
                                             modifier = Modifier
                                                 .size(8.dp)
-                                                .background(Color.Red, CircleShape)
+                                                .background(MaterialTheme.colorScheme.error, CircleShape)
                                                 .align(Alignment.CenterVertically)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text(issue)
+                                        Text(
+                                            issue,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
                                     }
                                 }
                             }
@@ -647,7 +666,8 @@ fun DocumentTab() {
                             Text(
                                 "সুপারিশ:",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
 
                             Spacer(modifier = Modifier.height(8.dp))
@@ -665,11 +685,14 @@ fun DocumentTab() {
                                         Box(
                                             modifier = Modifier
                                                 .size(8.dp)
-                                                .background(GreenSecondary, CircleShape)
+                                                .background(MaterialTheme.colorScheme.secondary, CircleShape)
                                                 .align(Alignment.CenterVertically)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text(recommendation)
+                                        Text(
+                                            recommendation,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
                                     }
                                 }
                             }
@@ -677,29 +700,29 @@ fun DocumentTab() {
                     }
                 }
             }
-        }
 
-        // Floating action button for camera
-        FloatingActionButton(
-            onClick = {
-                if (hasPermissions.value) {
-                    showCamera = true
-                } else {
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(24.dp)
-                .size(56.dp),
-            containerColor = GreenPrimary,
-            contentColor = Color.White
-        ) {
-            Icon(
-                imageVector = Icons.Default.Camera,
-                contentDescription = "Camera",
-                modifier = Modifier.size(24.dp)
-            )
+            // Floating action button for camera
+            FloatingActionButton(
+                onClick = {
+                    if (hasPermissions.value) {
+                        showCamera = true
+                    } else {
+                        permissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(24.dp)
+                    .size(56.dp),
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.CameraAlt,
+                    contentDescription = "Camera",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }
@@ -716,18 +739,27 @@ fun CameraView(
 
     val imageCapture = remember { ImageCapture.Builder().build() }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    // Full screen camera view
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
         AndroidView(
             factory = { ctx ->
                 val previewView = PreviewView(ctx).apply {
                     implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                    scaleType = PreviewView.ScaleType.FILL_CENTER
                 }
 
                 cameraProviderFuture.addListener({
                     val cameraProvider = cameraProviderFuture.get()
-                    val preview = Preview.Builder().build().also {
-                        it.setSurfaceProvider(previewView.surfaceProvider)
-                    }
+                    val preview = Preview.Builder()
+                        .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+                        .build()
+                        .also {
+                            it.setSurfaceProvider(previewView.surfaceProvider)
+                        }
 
                     val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
@@ -749,81 +781,129 @@ fun CameraView(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Camera UI elements
-        Column(
+        // Camera UI overlay
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .background(Color.Transparent)
         ) {
             // Top bar with close button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.End
+                    .padding(16.dp)
+                    .statusBarsPadding(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Spacer(modifier = Modifier.weight(1f))
+
                 IconButton(
                     onClick = onDismiss,
                     modifier = Modifier
                         .size(48.dp)
-                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        .background(
+                            Color.Black.copy(alpha = 0.6f),
+                            CircleShape
+                        )
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = Color.White
+                        contentDescription = "Close Camera",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Bottom section with capture button
+            // Bottom capture section
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp),
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 32.dp)
+                    .navigationBarsPadding(),
                 contentAlignment = Alignment.Center
             ) {
-                IconButton(
-                    onClick = {
-                        val photoFile = File(
-                            context.cacheDir,
-                            "IMG_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg"
-                        )
-
-                        val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
-
-                        imageCapture.takePicture(
-                            outputOptions,
-                            cameraExecutor,
-                            object : ImageCapture.OnImageSavedCallback {
-                                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                    val savedUri = Uri.fromFile(photoFile)
-                                    onPhotoTaken(savedUri)
-                                }
-
-                                override fun onError(exception: ImageCaptureException) {
-                                    Toast.makeText(
-                                        context,
-                                        "ছবি তোলার সময় ত্রুটি: ${exception.message}",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }
-                        )
-                    },
+                // Capture button
+                Box(
                     modifier = Modifier
-                        .size(72.dp)
+                        .size(80.dp)
+                        .background(
+                            Color.White.copy(alpha = 0.3f),
+                            CircleShape
+                        )
                         .border(4.dp, Color.White, CircleShape)
-                        .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                        .clickable {
+                            val photoFile = File(
+                                context.cacheDir,
+                                "IMG_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg"
+                            )
+
+                            val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+
+                            imageCapture.takePicture(
+                                outputOptions,
+                                cameraExecutor,
+                                object : ImageCapture.OnImageSavedCallback {
+                                    override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                                        val savedUri = Uri.fromFile(photoFile)
+                                        onPhotoTaken(savedUri)
+                                    }
+
+                                    override fun onError(exception: ImageCaptureException) {
+                                        Toast.makeText(
+                                            context,
+                                            "ছবি তোলার সময় ত্রুটি: ${exception.message}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                            )
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(56.dp)
+                            .size(64.dp)
                             .background(Color.White, CircleShape)
                     )
                 }
+            }
+
+            // Camera guidelines (optional)
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp)
+            ) {
+                val strokeWidth = 2.dp.toPx()
+                val cornerLength = 40.dp.toPx()
+
+                drawLine(
+                    color = Color.White.copy(alpha = 0.7f),
+                    start = Offset(0f, size.height / 3),
+                    end = Offset(size.width, size.height / 3),
+                    strokeWidth = strokeWidth
+                )
+                drawLine(
+                    color = Color.White.copy(alpha = 0.7f),
+                    start = Offset(0f, 2 * size.height / 3),
+                    end = Offset(size.width, 2 * size.height / 3),
+                    strokeWidth = strokeWidth
+                )
+                drawLine(
+                    color = Color.White.copy(alpha = 0.7f),
+                    start = Offset(size.width / 3, 0f),
+                    end = Offset(size.width / 3, size.height),
+                    strokeWidth = strokeWidth
+                )
+                drawLine(
+                    color = Color.White.copy(alpha = 0.7f),
+                    start = Offset(2 * size.width / 3, 0f),
+                    end = Offset(2 * size.width / 3, size.height),
+                    strokeWidth = strokeWidth
+                )
             }
         }
     }
