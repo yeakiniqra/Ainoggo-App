@@ -81,4 +81,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:1.6.1")
     implementation("androidx.compose.ui:ui-tooling:1.6.1")
 
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.27.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.31.1-alpha")
+
 }
